@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Adventure: นักผจญภัยพิชิตโลกดิจิทัล</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Prompt & Kanit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti for Victory Effect -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        * {
+            font-family: 'Prompt', 'Kanit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Cute Game Buttons Shadow Effect */
+        .btn-game {
+            transition: all 0.15s ease;
+            box-shadow: 0 6px 0 rgba(0, 0, 0, 0.2);
+        }
+        .btn-game:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 0 rgba(0, 0, 0, 0.2);
+        }
+        .btn-game:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        /* Pulse and Bounce Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .drop-zone-highlight {
+            border-color: #3b82f6 !important;
+            background-color: #eff6ff !important;
+        }
+
+        /* Custom Scrollbar for Workspace */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-sky-400 via-indigo-300 to-purple-400 min-h-screen flex flex-col justify-between text-slate-800 overflow-x-hidden select-none">
+
+    <!-- Top Header Navigation -->
+    <header class="bg-white/90 backdrop-blur-md border-b-4 border-indigo-200 px-4 py-3 shadow-md sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <!-- Game Title & Logo -->
+            <div class="flex items-center gap-3 cursor-pointer" onclick="game.showMap()">
+                <div class="bg-indigo-600 text-white p-2.5 rounded-2xl shadow-inner text-xl animate-bounce">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg sm:text-2xl text-indigo-900 leading-tight">Code Adventure</h1>
+                    <p class="text-xs sm:text-sm font-semibold text-indigo-600">นักผจญภัยพิชิตโลกดิจิทัล (ป.5)</p>
+                </div>
+            </div>
+
+            <!-- Stats Bar (Stars, Coins, Badges) -->
+            <div class="flex items-center gap-2 sm:gap-4">
+                <div class="bg-amber-100 border-2 border-amber-400 text-amber-800 px-3 py-1.5 rounded-full font-bold text-sm sm:text-base flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-star text-amber-500 text-lg"></i>
+                    <span id="total-stars-count">0</span>/15
+                </div>
+
+                <button onclick="game.openBadgesModal()" class="bg-purple-100 border-2 border-purple-400 text-purple-800 px-3 py-1.5 rounded-full font-bold text-sm sm:text-base flex items-center gap-1.5 shadow-sm hover:bg-purple-200 transition">
+                    <i class="fa-solid fa-award text-purple-600 text-lg"></i>
+                    <span class="hidden sm:inline">ตราประทับ</span>
+                </button>
+
+                <!-- Sound Toggle Button -->
+                <button id="sound-btn" onclick="game.toggleSound()" class="w-10 h-10 bg-slate-100 border-2 border-slate-300 text-slate-700 rounded-full flex items-center justify-center font-bold text-lg shadow-sm hover:bg-slate-200">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-6xl w-full mx-auto p-3 sm:p-6 flex flex-col justify-center">
+
+        <!-- ================= WORLD MAP VIEW ================= -->
+        <div id="world-map-view" class="space-y-6">
+            <!-- Hero Banner & Story Prompt -->
+            <div class="bg-white/95 rounded-3xl p-5 sm:p-6 shadow-xl border-4 border-indigo-200 relative overflow-hidden">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center text-4xl text-white shadow-lg shrink-0 animate-float">
+                            🤖
+                        </div>
+                        <div>
+                            <span class="bg-indigo-100 text-indigo-700 font-bold text-xs px-3 py-1 rounded-full uppercase tracking-wider">ภารกิจกู้คืนระบบ</span>
+                            <h2 class="text-xl sm:text-2xl font-bold text-slate-800 mt-1">ช่วยด้วย! หุ่นยนต์ผู้พิทักษ์ถูกไวรัสรบกวน!</h2>
+                            <p class="text-slate-600 text-sm sm:text-base mt-1">
+                                ร่วมเดินทางไปในแดนดิจิทัล ใช้ทักษะการคิดเชิงคำนวณแก้ปัญหาทั้ง 5 ด่าน เพื่อช่วยซ่อมแซมหุ่นยนต์ผู้พิทักษ์กันเลย!
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="game.resetProgress()" class="text-xs text-slate-400 hover:text-red-500 underline self-end md:self-center">
+                        <i class="fa-solid fa-rotate-right mr-1"></i>เริ่มเล่นใหม่ทั้งหมด
+                    </button>
+                </div>
+            </div>
+
+            <!-- Map Nodes (5 Levels) -->
+            <div class="bg-gradient-to-b from-emerald-100 to-teal-200 rounded-3xl p-6 sm:p-10 shadow-2xl border-4 border-teal-300 relative min-h-[420px] flex flex-col justify-around">
+                
+                <!-- Map Decorative Path SVG Line -->
+                <svg class="absolute inset-0 w-full h-full pointer-events-none stroke-teal-500/40" stroke-width="6" stroke-dasharray="12 12">
+                    <path id="map-path-line" d="M 80 80 Q 200 30 350 120 T 650 180 T 850 300" fill="transparent" />
+                </svg>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 relative z-10">
+                    
+                    <!-- Level 1 Node -->
+                    <div id="node-level-1" onclick="game.startLevel(1)" class="group bg-white rounded-2xl p-4 shadow-lg border-4 border-emerald-400 cursor-pointer transform hover:-translate-y-2 transition duration-200 text-center flex flex-col items-center">
+                        <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mb-2 group-hover:scale-110 transition">
+                            🌲
+                        </div>
+                        <span class="text-xs font-bold text-emerald-600 uppercase">ด่านที่ 1</span>
+                        <h3 class="font-bold text-slate-800 text-sm mt-0.5">ป่าแห่งลำดับคำสั่ง</h3>
+                        <div class="flex gap-1 text-amber-400 text-xs mt-2" id="stars-level-1">
+                            <i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i>
+                        </div>
+                    </div>
+
+                    <!-- Level 2 Node -->
+                    <div id="node-level-2" class="group bg-white/70 rounded-2xl p-4 shadow-lg border-4 border-slate-300 cursor-not-allowed opacity-75 text-center flex flex-col items-center">
+                        <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-3xl mb-2">
+                            🏰
+                        </div>
+                        <span class="text-xs font-bold text-slate-500 uppercase">ด่านที่ 2</span>
+                        <h3 class="font-bold text-slate-800 text-sm mt-0.5">เขาวงกตอัลกอริทึม</h3>
+                        <div class="flex gap-1 text-amber-400 text-xs mt-2" id="stars-level-2">
+                            <i class="fa-solid fa-lock text-slate-400 text-base"></i>
+                        </div>
+                    </div>
+
+                    <!-- Level 3 Node -->
+                    <div id="node-level-3" class="group bg-white/70 rounded-2xl p-4 shadow-lg border-4 border-slate-300 cursor-not-allowed opacity-75 text-center flex flex-col items-center">
+                        <div class="w-16 h-16 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center text-3xl mb-2">
+                            🏙️
+                        </div>
+                        <span class="text-xs font-bold text-slate-500 uppercase">ด่านที่ 3</span>
+                        <h3 class="font-bold text-slate-800 text-sm mt-0.5">เมืองแพตเทิร์น</h3>
+                        <div class="flex gap-1 text-amber-400 text-xs mt-2" id="stars-level-3">
+                            <i class="fa-solid fa-lock text-slate-400 text-base"></i>
+                        </div>
+                    </div>
+
+                    <!-- Level 4 Node -->
+                    <div id="node-level-4" class="group bg-white/70 rounded-2xl p-4 shadow-lg border-4 border-slate-300 cursor-not-allowed opacity-75 text-center flex flex-col items-center">
+                        <div class="w-16 h-16 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-3xl mb-2">
+                            🏭
+                        </div>
+                        <span class="text-xs font-bold text-slate-500 uppercase">ด่านที่ 4</span>
+                        <h3 class="font-bold text-slate-800 text-sm mt-0.5">โรงงานแยกข้อมูล</h3>
+                        <div class="flex gap-1 text-amber-400 text-xs mt-2" id="stars-level-4">
+                            <i class="fa-solid fa-lock text-slate-400 text-base"></i>
+                        </div>
+                    </div>
+
+                    <!-- Level 5 Node -->
+                    <div id="node-level-5" class="group bg-white/70 rounded-2xl p-4 shadow-lg border-4 border-slate-300 cursor-not-allowed opacity-75 text-center flex flex-col items-center">
+                        <div class="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center text-3xl mb-2">
+                            🛠️
+                        </div>
+                        <span class="text-xs font-bold text-slate-500 uppercase">ด่านที่ 5</span>
+                        <h3 class="font-bold text-slate-800 text-sm mt-0.5">ภารกิจนักแก้ปัญหา</h3>
+                        <div class="flex gap-1 text-amber-400 text-xs mt-2" id="stars-level-5">
+                            <i class="fa-solid fa-lock text-slate-400 text-base"></i>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= ACTIVE LEVEL CONTAINER ================= -->
+        <div id="level-play-view" class="hidden space-y-4">
+            
+            <!-- Level Action Header Bar -->
+            <div class="bg-white/90 rounded-2xl p-3 sm:p-4 shadow-md flex items-center justify-between border-2 border-indigo-100">
+                <button onclick="game.showMap()" class="btn-game bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-map"></i> แผนที่
+                </button>
+                <div class="text-center">
+                    <span id="level-badge-title" class="bg-indigo-100 text-indigo-700 font-bold text-xs px-2.5 py-0.5 rounded-full">ด่านที่ 1</span>
+                    <h2 id="level-display-name" class="font-bold text-slate-800 text-base sm:text-xl">ป่าแห่งลำดับคำสั่ง</h2>
+                </div>
+                <button onclick="game.showCurrentHint()" class="btn-game bg-amber-400 text-amber-900 font-bold px-4 py-2 rounded-xl text-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-lightbulb"></i> คำใบ้
+                </button>
+            </div>
+
+            <!-- Dynamic Level Canvas/Interactive Area -->
+            <div id="level-dynamic-content" class="bg-white rounded-3xl p-4 sm:p-6 shadow-xl border-4 border-indigo-100 min-h-[480px] flex flex-col justify-center">
+                <!-- Level UI components injected via JS -->
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- ================= MODALS & POPUPS ================= -->
+    
+    <!-- 1. Victory Level Modal -->
+    <div id="victory-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl border-4 border-amber-300 transform transition scale-95 animate-bounce-once">
+            <div class="w-24 h-24 bg-amber-100 text-amber-500 rounded-full mx-auto flex items-center justify-center text-5xl mb-4 shadow-inner">
+                🏆
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-bold text-slate-800">ภารกิจสำเร็จ!</h2>
+            <p id="victory-message" class="text-slate-600 mt-2 text-sm sm:text-base">สุดยอดมาก! คุณผ่านด่านนี้เรียบร้อยแล้ว</p>
+            
+            <!-- Stars Earned -->
+            <div class="flex justify-center gap-2 text-4xl text-amber-400 my-4" id="victory-stars">
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+            </div>
+
+            <!-- Unlocked Badge Alert -->
+            <div id="badge-unlocked-banner" class="hidden bg-purple-100 border-2 border-purple-300 rounded-2xl p-3 mb-4 text-purple-800 text-sm font-semibold flex items-center justify-center gap-2">
+                <i class="fa-solid fa-award text-2xl text-purple-600"></i>
+                <span id="badge-unlocked-name">ได้รับเหรียญตรา: นักคิดเป็นขั้นตอน</span>
+            </div>
+
+            <div class="flex gap-3 justify-center mt-6">
+                <button onclick="game.showMap()" class="btn-game bg-slate-200 text-slate-700 font-bold px-5 py-2.5 rounded-xl text-sm">
+                    หน้าแผนที่
+                </button>
+                <button id="next-level-btn" onclick="game.nextLevel()" class="btn-game bg-emerald-500 text-white font-bold px-6 py-2.5 rounded-xl text-sm flex items-center gap-2">
+                    ด่านถัดไป <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Hint Modal -->
+    <div id="hint-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border-4 border-amber-300">
+            <div class="flex items-center gap-3 mb-3 text-amber-600 font-bold text-lg">
+                <i class="fa-solid fa-robot text-2xl"></i>
+                <span>หุ่นยนต์ผู้พิทักษ์แนะนำ</span>
+            </div>
+            <p id="hint-text" class="text-slate-700 text-sm sm:text-base leading-relaxed bg-amber-50 p-4 rounded-2xl border border-amber-200">
+                ลองตรวจสอบลำดับของบล็อกคำสั่งดูนะ!
+            </p>
+            <div class="mt-5 text-right">
+                <button onclick="game.closeHintModal()" class="btn-game bg-indigo-600 text-white font-bold px-6 py-2 rounded-xl text-sm">
+                    เข้าใจแล้ว!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Badges Collection Modal -->
+    <div id="badges-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border-4 border-purple-200">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-xl text-purple-900 flex items-center gap-2">
+                    <i class="fa-solid fa-award text-purple-600"></i> ตราประทับความสำเร็จ
+                </h3>
+                <button onclick="game.closeBadgesModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">
+                    &times;
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="badges-grid-container">
+                <!-- Badges dynamic insertion -->
+            </div>
+
+            <div class="mt-6 text-center">
+                <button onclick="game.closeBadgesModal()" class="btn-game bg-slate-200 text-slate-700 font-bold px-6 py-2 rounded-xl text-sm">
+                    ปิด
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center py-3 text-xs text-indigo-900/70 font-medium">
+        สื่อการเรียนรู้วิทยาการคำนวณ ชั้นประถมศึกษาปีที่ 5 &copy; Code Adventure
+    </footer>
+
+    <script>
+        /* Web Audio API Sound Synthesizer (No External Audio Files Needed) */
+        class GameAudio {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playClick() {
+                if (!this.enabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, this.ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.08);
+            }
+
+            playStep() {
+                if (!this.enabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(250, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.05);
+            }
+
+            playSuccess() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                osc.frequency.setValueAtTime(1046.50, now + 0.3); // C6
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.5);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.5);
+            }
+
+            playError() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.setValueAtTime(150, now + 0.12);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.3);
+            }
+        }
+
+        const audio = new GameAudio();
+
+        class GameEngine {
+            constructor() {
+                this.currentLevel = 1;
+                this.unlockedLevel = 1;
+                this.stars = [0, 0, 0, 0, 0];
+                this.soundOn = true;
+                this.badges = [
+                    { id: 1, title: "นักคิดเป็นขั้นตอน", desc: "ผ่านด่านที่ 1 ป่าแห่งลำดับคำสั่ง", icon: "🌱", unlocked: false },
+                    { id: 2, title: "นักสร้างอัลกอริทึม", desc: "ผ่านด่านที่ 2 เขาวงกตอัลกอริทึม", icon: "🗺️", unlocked: false },
+                    { id: 3, title: "นักจับแพตเทิร์น", desc: "ผ่านด่านที่ 3 เมืองแพตเทิร์น", icon: "🔍", unlocked: false },
+                    { id: 4, title: "นักจัดการข้อมูล", desc: "ผ่านด่านที่ 4 โรงงานแยกข้อมูล", icon: "📦", unlocked: false },
+                    { id: 5, title: "นักแก้ปัญหา (Debugger)", desc: "ผ่านด่านที่ 5 ภารกิจนักแก้ปัญหา", icon: "🛠️", unlocked: false }
+                ];
+
+                this.levelHints = {
+                    1: "ลากบล็อกคำสั่ง 'เดินหน้า', 'เลี้ยวซ้าย' หรือ 'เลี้ยวขวา' มาต่อกันให้ถูกต้องเพื่อพาตัวละครไปถึงจุดเป้าหมาย 🚩",
+                    2: "วางแผนเส้นทางก่อนกดเริ่ม! วางแผนไปเก็บ 'กุญแจ' 🔑 เพื่อเปิด 'ประตู' 🚪 แล้วจึงเดินทางไปยังเป้าหมาย",
+                    3: "สังเกตลำดับรูปภาพหรือสัญลักษณ์ที่ซ้ำกัน จากนั้นลากรูปภาพทางด้านล่างมาเติมในช่องว่าง ❓ ให้สมบูรณ์",
+                    4: "จัดกลุ่มข้อมูลให้ถูกต้อง! ลากการ์ดข้อมูลแต่ละใบไปหย่อนลงในกล่องหมวดหมู่ที่เหมาะสม",
+                    5: "ตรวจสอบขั้นตอนของหุ่นยนต์ส่งของ หาจุดที่เดินผิดพลาด แล้วคลิกแก้ไขทิศทางให้ถูกต้องเพื่อทำภารกิจส่งของให้สำเร็จ!"
+                };
+
+                this.loadSaveData();
+            }
+
+            loadSaveData() {
+                try {
+                    const saved = localStorage.getItem('code_adventure_p5_save');
+                    if (saved) {
+                        const data = JSON.parse(saved);
+                        this.unlockedLevel = data.unlockedLevel || 1;
+                        this.stars = data.stars || [0, 0, 0, 0, 0];
+                        if (data.badges) {
+                            this.badges.forEach((b, idx) => {
+                                if (data.badges[idx]) b.unlocked = data.badges[idx].unlocked;
+                            });
+                        }
+                    }
+                } catch(e) {
+                    console.log("LocalStorage not available, using default state.");
+                }
+                this.updateUI();
+            }
+
+            saveProgress() {
+                try {
+                    const data = {
+                        unlockedLevel: this.unlockedLevel,
+                        stars: this.stars,
+                        badges: this.badges
+                    };
+                    localStorage.setItem('code_adventure_p5_save', JSON.stringify(data));
+                } catch(e) {}
+                this.updateUI();
+            }
+
+            resetProgress() {
+                if (confirm("คุณต้องการเริ่มเล่นใหม่และลบความก้าวหน้าทั้งหมดใช่หรือไม่?")) {
+                    localStorage.removeItem('code_adventure_p5_save');
+                    this.unlockedLevel = 1;
+                    this.stars = [0, 0, 0, 0, 0];
+                    this.badges.forEach(b => b.unlocked = false);
+                    this.saveProgress();
+                    this.showMap();
+                }
+            }
+
+            toggleSound() {
+                this.soundOn = !this.soundOn;
+                audio.enabled = this.soundOn;
+                const btn = document.getElementById('sound-btn');
+                btn.innerHTML = this.soundOn ? '<i class="fa-solid fa-volume-high"></i>' : '<i class="fa-solid fa-volume-xmark"></i>';
+                btn.classList.toggle('text-slate-400', !this.soundOn);
+            }
+
+            updateUI() {
+                // Calculate Total Stars
+                const totalStars = this.stars.reduce((a, b) => a + b, 0);
+                document.getElementById('total-stars-count').innerText = totalStars;
+
+                // Update Map Nodes
+                for (let i = 1; i <= 5; i++) {
+                    const node = document.getElementById(`node-level-${i}`);
+                    const starsContainer = document.getElementById(`stars-level-${i}`);
+                    
+                    if (!node) continue;
+
+                    if (i <= this.unlockedLevel) {
+                        node.className = "group bg-white rounded-2xl p-4 shadow-lg border-4 border-emerald-400 cursor-pointer transform hover:-translate-y-2 transition duration-200 text-center flex flex-col items-center";
+                        node.onclick = () => this.startLevel(i);
+
+                        // Render Stars
+                        let starsHTML = '';
+                        const starCount = this.stars[i - 1];
+                        for (let s = 1; s <= 3; s++) {
+                            if (s <= starCount) {
+                                starsHTML += '<i class="fa-solid fa-star text-amber-400"></i>';
+                            } else {
+                                starsHTML += '<i class="fa-regular fa-star text-slate-300"></i>';
+                            }
+                        }
+                        starsContainer.innerHTML = starsHTML;
+                    } else {
+                        node.className = "group bg-white/70 rounded-2xl p-4 shadow-lg border-4 border-slate-300 cursor-not-allowed opacity-75 text-center flex flex-col items-center";
+                        node.onclick = null;
+                        starsContainer.innerHTML = '<i class="fa-solid fa-lock text-slate-400 text-base"></i>';
+                    }
+                }
+            }
+
+            showMap() {
+                audio.playClick();
+                document.getElementById('world-map-view').classList.remove('hidden');
+                document.getElementById('level-play-view').classList.add('hidden');
+                this.updateUI();
+            }
+
+            startLevel(levelNum) {
+                audio.playClick();
+                this.currentLevel = levelNum;
+                document.getElementById('world-map-view').classList.add('hidden');
+                document.getElementById('level-play-view').classList.remove('hidden');
+
+                document.getElementById('level-badge-title').innerText = `ด่านที่ ${levelNum}`;
+
+                const names = [
+                    "ป่าแห่งลำดับคำสั่ง (Sequence)",
+                    "เขาวงกตอัลกอริทึม (Algorithm)",
+                    "เมืองแพตเทิร์น (Pattern Recognition)",
+                    "โรงงานแยกข้อมูล (Data Sorting)",
+                    "ภารกิจนักแก้ปัญหา (Debugging)"
+                ];
+                document.getElementById('level-display-name').innerText = names[levelNum - 1];
+
+                // Render specific level game logic
+                const container = document.getElementById('level-dynamic-content');
+                container.innerHTML = '';
+
+                switch (levelNum) {
+                    case 1: renderLevel1(container); break;
+                    case 2: renderLevel2(container); break;
+                    case 3: renderLevel3(container); break;
+                    case 4: renderLevel4(container); break;
+                    case 5: renderLevel5(container); break;
+                }
+            }
+
+            showCurrentHint() {
+                audio.playClick();
+                document.getElementById('hint-text').innerText = this.levelHints[this.currentLevel];
+                document.getElementById('hint-modal').classList.remove('hidden');
+            }
+
+            closeHintModal() {
+                audio.playClick();
+                document.getElementById('hint-modal').classList.add('hidden');
+            }
+
+            completeLevel(starsEarned) {
+                audio.playSuccess();
+                if (starsEarned > this.stars[this.currentLevel - 1]) {
+                    this.stars[this.currentLevel - 1] = starsEarned;
+                }
+
+                // Unlock next level
+                if (this.currentLevel < 5 && this.unlockedLevel < this.currentLevel + 1) {
+                    this.unlockedLevel = this.currentLevel + 1;
+                }
+
+                // Unlock Badge
+                const badge = this.badges.find(b => b.id === this.currentLevel);
+                let badgeJustUnlocked = false;
+                if (badge && !badge.unlocked) {
+                    badge.unlocked = true;
+                    badgeJustUnlocked = true;
+                }
+
+                this.saveProgress();
+
+                // Fire Confetti
+                if (typeof confetti === 'function') {
+                    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                }
+
+                // Show Victory Modal
+                const modal = document.getElementById('victory-modal');
+                const starsContainer = document.getElementById('victory-stars');
+                let starHTML = '';
+                for (let i = 1; i <= 3; i++) {
+                    starHTML += i <= starsEarned ? '<i class="fa-solid fa-star text-amber-400"></i>' : '<i class="fa-regular fa-star text-slate-300"></i>';
+                }
+                starsContainer.innerHTML = starHTML;
+
+                const badgeBanner = document.getElementById('badge-unlocked-banner');
+                if (badgeJustUnlocked) {
+                    document.getElementById('badge-unlocked-name').innerText = `ยินดีด้วย! คุณได้รับตราประทับ: ${badge.title}`;
+                    badgeBanner.classList.remove('hidden');
+                } else {
+                    badgeBanner.classList.add('hidden');
+                }
+
+                const nextBtn = document.getElementById('next-level-btn');
+                if (this.currentLevel >= 5) {
+                    nextBtn.classList.add('hidden');
+                } else {
+                    nextBtn.classList.remove('hidden');
+                }
+
+                modal.classList.remove('hidden');
+            }
+
+            nextLevel() {
+                document.getElementById('victory-modal').classList.add('hidden');
+                if (this.currentLevel < 5) {
+                    this.startLevel(this.currentLevel + 1);
+                } else {
+                    this.showMap();
+                }
+            }
+
+            openBadgesModal() {
+                audio.playClick();
+                const container = document.getElementById('badges-grid-container');
+                container.innerHTML = '';
+
+                this.badges.forEach(b => {
+                    const card = document.createElement('div');
+                    card.className = `p-3.5 rounded-2xl border-2 flex items-center gap-3 ${b.unlocked ? 'bg-purple-50 border-purple-300 text-purple-900' : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'}`;
+                    card.innerHTML = `
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${b.unlocked ? 'bg-purple-200' : 'bg-slate-200'}">
+                            ${b.unlocked ? b.icon : '🔒'}
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-sm">${b.title}</h4>
+                            <p class="text-xs text-slate-500">${b.desc}</p>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+                document.getElementById('badges-modal').classList.remove('hidden');
+            }
+
+            closeBadgesModal() {
+                audio.playClick();
+                document.getElementById('badges-modal').classList.add('hidden');
+            }
+        }
+
+        const game = new GameEngine();
+
+        function renderLevel1(container) {
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                    
+                    <!-- Left: Control Blocks Palette & Execution Workspace -->
+                    <div class="md:col-span-5 bg-slate-50 rounded-2xl p-4 border-2 border-indigo-100 space-y-4">
+                        <h3 class="font-bold text-slate-700 text-sm flex items-center justify-between">
+                            <span class="flex items-center gap-2">
+                                <i class="fa-solid fa-cubes text-indigo-500"></i> บล็อกคำสั่งทิศทาง
+                            </span>
+                            <span class="text-[11px] font-normal text-slate-500">(คลิกเพื่อเลือก)</span>
+                        </h3>
+
+                        <!-- Block Palette with Distinct Clear Turn Icons -->
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="addBlockL1('forward')" class="btn-game col-span-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold p-2.5 rounded-xl text-xs flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-arrow-up text-base"></i> ⬆️ เดินหน้า (ตรงไป)
+                            </button>
+                            <button onclick="addBlockL1('left')" class="btn-game bg-sky-500 hover:bg-sky-600 text-white font-bold p-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-arrow-rotate-left text-base"></i> ↰ หันซ้าย 👈
+                            </button>
+                            <button onclick="addBlockL1('right')" class="btn-game bg-amber-500 hover:bg-amber-600 text-white font-bold p-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5">
+                                ↱ หันขวา 👉 <i class="fa-solid fa-arrow-rotate-right text-base"></i>
+                            </button>
+                        </div>
+
+                        <!-- Visual Direction Helper -->
+                        <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-2 text-[11px] text-indigo-900 flex justify-around font-medium">
+                            <span>👈 <b>ซ้าย</b> = หมุนทวนเข็ม</span>
+                            <span>👉 <b>ขวา</b> = หมุนตามเข็ม</span>
+                        </div>
+
+                        <!-- Workspace / Command List -->
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center text-xs font-semibold text-slate-600">
+                                <span>ลำดับขั้นตอนการทำงาน:</span>
+                                <span id="l1-block-count" class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-[11px]">0 บล็อก</span>
+                            </div>
+                            <div id="l1-workspace" class="bg-white border-2 border-dashed border-slate-300 rounded-2xl p-3 min-h-[180px] max-h-[220px] overflow-y-auto space-y-2 flex flex-col">
+                                <p id="l1-empty-tip" class="text-xs text-slate-400 text-center my-auto">
+                                    คลิกบล็อกคำสั่งด้านบนเพื่อสร้างอัลกอริทึม
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Run Controls -->
+                        <div class="flex gap-2">
+                            <button onclick="clearBlocksL1()" class="btn-game bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold px-3 py-3 rounded-2xl text-xs flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-trash"></i> ล้าง
+                            </button>
+                            <button id="l1-run-btn" onclick="runL1()" class="btn-game flex-grow bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-2xl text-base flex items-center justify-center gap-2 shadow-lg">
+                                <i class="fa-solid fa-play"></i> เริ่มเดิน (Run)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Game Board Map Grid -->
+                    <div class="md:col-span-7 flex flex-col items-center">
+                        <div class="bg-emerald-50 p-4 rounded-3xl border-4 border-emerald-200 shadow-inner w-full max-w-md">
+                            <div id="l1-grid" class="grid grid-cols-5 gap-2 bg-emerald-300 p-2.5 rounded-2xl">
+                                <!-- Grid tiles rendered dynamically -->
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-3 text-center">
+                            🎯 พาตัวละครเด็กน้อย 🧑‍🌾 เดินทางผ่านป่าเพื่อไปหาหุ่นยนต์ผู้พิทักษ์ 🤖
+                        </p>
+                    </div>
+
+                </div>
+            `;
+
+            // Grid size 5x5
+            const gridMap = [
+                ['E', 'E', 'E', 'O', 'G'],
+                ['E', 'O', 'E', 'E', 'E'],
+                ['E', 'E', 'E', 'O', 'E'],
+                ['O', 'E', 'O', 'E', 'E'],
+                ['S', 'E', 'E', 'E', 'O']
+            ];
+
+            window.l1State = {
+                grid: gridMap,
+                playerX: 0,
+                playerY: 4, // Start bottom-left
+                dir: 0, // 0: Up, 1: Right, 2: Down, 3: Left
+                commands: [],
+                isRunning: false
+            };
+
+            renderL1Grid();
+        }
+
+        function renderL1Grid() {
+            const gridContainer = document.getElementById('l1-grid');
+            if (!gridContainer) return;
+            gridContainer.innerHTML = '';
+
+            const dirIcons = ['⬆️', '➡️', '⬇️', '⬅️'];
+
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    const tile = document.createElement('div');
+                    tile.className = "w-12 h-12 sm:w-14 sm:h-14 bg-emerald-50 rounded-xl flex items-center justify-center text-xl sm:text-2xl relative shadow-sm border border-emerald-300/60";
+
+                    const item = window.l1State.grid[r][c];
+                    if (item === 'O') {
+                        tile.innerText = '🌲';
+                        tile.classList.add('bg-emerald-200');
+                    } else if (item === 'G') {
+                        tile.innerText = '🤖';
+                        tile.classList.add('bg-indigo-100');
+                    }
+
+                    if (window.l1State.playerX === c && window.l1State.playerY === r) {
+                        tile.innerHTML = `<div class="relative flex items-center justify-center">
+                            🧑‍🌾 <span class="absolute -top-2 text-[10px]">${dirIcons[window.l1State.dir]}</span>
+                        </div>`;
+                    }
+
+                    gridContainer.appendChild(tile);
+                }
+            }
+        }
+
+        function addBlockL1(cmd) {
+            if (window.l1State.isRunning) return;
+            audio.playClick();
+            window.l1State.commands.push(cmd);
+            updateL1Workspace();
+        }
+
+        function removeBlockL1(idx) {
+            if (window.l1State.isRunning) return;
+            audio.playClick();
+            window.l1State.commands.splice(idx, 1);
+            updateL1Workspace();
+        }
+
+        function clearBlocksL1() {
+            if (window.l1State.isRunning) return;
+            audio.playClick();
+            window.l1State.commands = [];
+            updateL1Workspace();
+        }
+
+        async function runL1() {
+            if (window.l1State.isRunning) return;
+            if (window.l1State.commands.length === 0) return;
+
+            window.l1State.isRunning = true;
+            window.l1State.playerX = 0;
+            window.l1State.playerY = 4;
+            window.l1State.dir = 0;
+            renderL1Grid();
+
+            const dx = [0, 1, 0, -1];
+            const dy = [-1, 0, 1, 0];
+
+            for (let i = 0; i < window.l1State.commands.length; i++) {
+                const cmd = window.l1State.commands[i];
+                audio.playStep();
+
+                if (cmd === 'left') {
+                    window.l1State.dir = (window.l1State.dir + 3) % 4;
+                } else if (cmd === 'right') {
+                    window.l1State.dir = (window.l1State.dir + 1) % 4;
+                } else if (cmd === 'forward') {
+                    const nx = window.l1State.playerX + dx[window.l1State.dir];
+                    const ny = window.l1State.playerY + dy[window.l1State.dir];
+
+                    if (nx >= 0 && nx < 5 && ny >= 0 && ny < 5) {
+                        const targetCell = window.l1State.grid[ny][nx];
+
+                        if (targetCell === 'O') {
+                            audio.playError();
+                            alert("ชนสิ่งกีดขวางในป่า! ลองปรับแก้ไขชุดคำสั่งนะ");
+                            window.l1State.isRunning = false;
+                            return;
+                        }
+
+                        window.l1State.playerX = nx;
+                        window.l1State.playerY = ny;
+                    } else {
+                        audio.playError();
+                        alert("ตกขอบแมพ! ลองปรับแก้ไขชุดคำสั่งนะ");
+                        window.l1State.isRunning = false;
+                        return;
+                    }
+                }
+
+                renderL1Grid();
+                await new Promise(r => setTimeout(r, 400));
+            }
+
+            if (window.l1State.playerX === 4 && window.l1State.playerY === 0) {
+                game.completeLevel(3);
+            } else {
+                audio.playError();
+                alert("ยังไม่ถึงหุ่นยนต์! ลองปรับลำดับคำสั่งใหม่อีกครั้งนะ");
+            }
+
+            window.l1State.isRunning = false;
+        }
+
+        function updateL1Workspace() {
+            const ws = document.getElementById('l1-workspace');
+            const count = document.getElementById('l1-block-count');
+
+            count.innerText = `${window.l1State.commands.length} บล็อก`;
+
+            if (window.l1State.commands.length === 0) {
+                ws.innerHTML = `<p id="l1-empty-tip" class="text-xs text-slate-400 text-center my-auto">คลิกบล็อกคำสั่งด้านบนเพื่อสร้างอัลกอริทึม</p>`;
+                return;
+            }
+
+            const labels = {
+                'forward': { name: '⬆️ เดินหน้า 1 ก้าว', icon: 'fa-arrow-up', bg: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
+                'left': { name: '↰ หันซ้าย 👈', icon: 'fa-arrow-rotate-left', bg: 'bg-sky-100 text-sky-800 border-sky-300' },
+                'right': { name: '↱ หันขวา 👉', icon: 'fa-arrow-rotate-right', bg: 'bg-amber-100 text-amber-800 border-amber-300' }
+            };
+
+            ws.innerHTML = window.l1State.commands.map((cmd, idx) => `
+                <div class="flex items-center justify-between p-2 rounded-xl border ${labels[cmd].bg} text-xs font-bold animate-fadeIn">
+                    <span class="flex items-center gap-2">
+                        <span class="w-5 h-5 bg-white rounded-full flex items-center justify-center text-[10px] text-slate-600 shadow-xs">${idx+1}</span>
+                        <i class="fa-solid ${labels[cmd].icon}"></i> ${labels[cmd].name}
+                    </span>
+                    <button onclick="removeBlockL1(${idx})" class="text-slate-400 hover:text-red-500">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function renderLevel2(container) {
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                    
+                    <div class="md:col-span-5 bg-slate-50 rounded-2xl p-4 border-2 border-indigo-100 space-y-4">
+                        <h3 class="font-bold text-slate-700 text-sm flex items-center justify-between">
+                            <span class="flex items-center gap-2">
+                                <i class="fa-solid fa-map-location-dot text-amber-500"></i> วางแผนอัลกอริทึม
+                            </span>
+                        </h3>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="addBlockL2('forward')" class="btn-game col-span-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold p-2.5 rounded-xl text-xs flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-arrow-up text-base"></i> ⬆️ เดินหน้า (ตรงไป)
+                            </button>
+                            <button onclick="addBlockL2('left')" class="btn-game bg-sky-500 hover:bg-sky-600 text-white font-bold p-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-arrow-rotate-left text-base"></i> ↰ หันซ้าย 👈
+                            </button>
+                            <button onclick="addBlockL2('right')" class="btn-game bg-amber-500 hover:bg-amber-600 text-white font-bold p-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5">
+                                ↱ หันขวา 👉 <i class="fa-solid fa-arrow-rotate-right text-base"></i>
+                            </button>
+                        </div>
+
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center text-xs font-semibold text-slate-600">
+                                <span>ชุดคำสั่งสืบเนื่อง:</span>
+                                <span id="l2-block-count" class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full text-[11px]">0 บล็อก</span>
+                            </div>
+                            <div id="l2-workspace" class="bg-white border-2 border-dashed border-slate-300 rounded-2xl p-3 min-h-[180px] max-h-[220px] overflow-y-auto space-y-2">
+                                <p id="l2-empty-tip" class="text-xs text-slate-400 text-center my-auto">
+                                    วางแผน: เดินไปเก็บกุญแจ 🔑 ก่อน แล้วไปไขประตู 🚪
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button onclick="clearBlocksL2()" class="btn-game bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold px-3 py-3 rounded-2xl text-xs flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-trash"></i> ล้าง
+                            </button>
+                            <button id="l2-run-btn" onclick="runL2()" class="btn-game flex-grow bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-2xl text-base flex items-center justify-center gap-2 shadow-lg">
+                                <i class="fa-solid fa-play"></i> เริ่มเดินทาง (Execute)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-7 flex flex-col items-center">
+                        <div class="bg-amber-50 p-4 rounded-3xl border-4 border-amber-200 shadow-inner w-full max-w-md">
+                            <div id="l2-grid" class="grid grid-cols-5 gap-2 bg-amber-200 p-2.5 rounded-2xl">
+                                <!-- Grid tiles -->
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-3 text-center">
+                            💡 เงื่อนไข: ต้องเดินไปเก็บกุญแจ 🔑 ก่อน ประตู 🚪 ถึงจะเปิดออกได้!
+                        </p>
+                    </div>
+
+                </div>
+            `;
+
+            // Grid: S=Start, K=Key, D=Door, G=Goal, W=Wall
+            const gridMap = [
+                ['E', 'E', 'E', 'W', 'G'],
+                ['E', 'W', 'E', 'D', 'E'],
+                ['E', 'W', 'E', 'W', 'W'],
+                ['K', 'E', 'E', 'E', 'E'],
+                ['S', 'W', 'W', 'W', 'E']
+            ];
+
+            window.l2State = {
+                grid: gridMap,
+                playerX: 0,
+                playerY: 4,
+                dir: 0, // 0:Up
+                hasKey: false,
+                doorOpen: false,
+                commands: [],
+                isRunning: false
+            };
+
+            renderL2Grid();
+        }
+
+        function addBlockL2(cmd) {
+            if (window.l2State.isRunning) return;
+            audio.playClick();
+            window.l2State.commands.push(cmd);
+            updateL2Workspace();
+        }
+
+        function clearBlocksL2() {
+            if (window.l2State.isRunning) return;
+            audio.playClick();
+            window.l2State.commands = [];
+            updateL2Workspace();
+        }
+
+        function updateL2Workspace() {
+            const ws = document.getElementById('l2-workspace');
+            const count = document.getElementById('l2-block-count');
+            count.innerText = `${window.l2State.commands.length} บล็อก`;
+
+            if (window.l2State.commands.length === 0) {
+                ws.innerHTML = `<p class="text-xs text-slate-400 text-center my-auto">วางแผน: เดินไปเก็บกุญแจ 🔑 ก่อน แล้วไปไขประตู 🚪</p>`;
+                return;
+            }
+
+            const labels = {
+                'forward': '⬆️ เดินหน้า 1 ก้าว',
+                'left': '↰ หันซ้าย 👈',
+                'right': '↱ หันขวา 👉'
+            };
+
+            ws.innerHTML = window.l2State.commands.map((cmd, idx) => `
+                <div class="flex items-center justify-between p-2 rounded-xl border bg-amber-100 text-amber-900 border-amber-300 text-xs font-bold">
+                    <span>${idx+1}. ${labels[cmd]}</span>
+                    <button onclick="window.l2State.commands.splice(${idx},1); updateL2Workspace();" class="text-slate-400 hover:text-red-500">&times;</button>
+                </div>
+            `).join('');
+        }
+
+        function resetL2Player() {
+            window.l2State.playerX = 0;
+            window.l2State.playerY = 4;
+            window.l2State.dir = 0;
+            window.l2State.hasKey = false;
+            window.l2State.doorOpen = false;
+            renderL2Grid();
+        }
+
+        function renderL2Grid() {
+            const gridContainer = document.getElementById('l2-grid');
+            if (!gridContainer) return;
+            gridContainer.innerHTML = '';
+
+            const dirIcons = ['⬆️', '➡️', '⬇️', '⬅️'];
+
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    const tile = document.createElement('div');
+                    tile.className = "w-12 h-12 sm:w-14 sm:h-14 bg-amber-50 rounded-xl flex items-center justify-center text-xl sm:text-2xl relative shadow-sm border border-amber-300/60";
+
+                    const item = window.l2State.grid[r][c];
+                    if (item === 'W') {
+                        tile.innerText = '🧱';
+                        tile.classList.add('bg-slate-300');
+                    } else if (item === 'K' && !window.l2State.hasKey) {
+                        tile.innerText = '🔑';
+                    } else if (item === 'D' && !window.l2State.doorOpen) {
+                        tile.innerText = '🚪';
+                        tile.classList.add('bg-amber-300');
+                    } else if (item === 'G') {
+                        tile.innerText = '🤖';
+                        tile.classList.add('bg-emerald-200');
+                    }
+
+                    if (window.l2State.playerX === c && window.l2State.playerY === r) {
+                        tile.innerHTML = `<div class="relative flex items-center justify-center">
+                            🧑‍🎓 <span class="absolute -top-2 text-[10px]">${dirIcons[window.l2State.dir]}</span>
+                        </div>`;
+                    }
+
+                    gridContainer.appendChild(tile);
+                }
+            }
+        }
+
+        async function runL2() {
+            if (window.l2State.isRunning) return;
+            if (window.l2State.commands.length === 0) return;
+
+            window.l2State.isRunning = true;
+            resetL2Player();
+
+            const dx = [0, 1, 0, -1];
+            const dy = [-1, 0, 1, 0];
+
+            for (let i = 0; i < window.l2State.commands.length; i++) {
+                const cmd = window.l2State.commands[i];
+                audio.playStep();
+
+                if (cmd === 'left') {
+                    window.l2State.dir = (window.l2State.dir + 3) % 4;
+                } else if (cmd === 'right') {
+                    window.l2State.dir = (window.l2State.dir + 1) % 4;
+                } else if (cmd === 'forward') {
+                    const nx = window.l2State.playerX + dx[window.l2State.dir];
+                    const ny = window.l2State.playerY + dy[window.l2State.dir];
+
+                    if (nx >= 0 && nx < 5 && ny >= 0 && ny < 5) {
+                        const targetCell = window.l2State.grid[ny][nx];
+
+                        if (targetCell === 'W') {
+                            audio.playError();
+                            alert("ชนกำแพงอิฐ! ตรวจสอบเส้นทางใหม่อีกครั้งนะ");
+                            window.l2State.isRunning = false;
+                            return;
+                        }
+
+                        if (targetCell === 'D' && !window.l2State.hasKey) {
+                            audio.playError();
+                            alert("ประตูล็อคอยู่! คุณต้องไปเก็บกุญแจ 🔑 ก่อนนะ");
+                            window.l2State.isRunning = false;
+                            return;
+                        }
+
+                        if (targetCell === 'K') {
+                            window.l2State.hasKey = true;
+                            window.l2State.doorOpen = true; // Key unlocks door
+                        }
+
+                        window.l2State.playerX = nx;
+                        window.l2State.playerY = ny;
+                    } else {
+                        audio.playError();
+                        alert("ตกขอบแมพ! ลองปรับแก้ไขชุดคำสั่งนะ");
+                        window.l2State.isRunning = false;
+                        return;
+                    }
+                }
+
+                renderL2Grid();
+                await new Promise(r => setTimeout(r, 400));
+            }
+
+            if (window.l2State.playerX === 4 && window.l2State.playerY === 0) {
+                game.completeLevel(3);
+            } else {
+                audio.playError();
+                alert("ยังไม่ถึงจุดหมาย! ลองวางแผนอัลกอริทึมใหม่อีกครั้งนะ");
+            }
+
+            window.l2State.isRunning = false;
+        }
+
+        function renderLevel3(container) {
+            container.innerHTML = `
+                <div class="max-w-2xl mx-auto space-y-6 text-center">
+                    <div class="bg-sky-50 border-2 border-sky-200 rounded-2xl p-4">
+                        <span id="l3-stage-indicator" class="bg-sky-600 text-white font-bold text-xs px-3 py-1 rounded-full uppercase">ข้อที่ 1 / 3</span>
+                        <h3 class="font-bold text-slate-800 text-base sm:text-lg mt-2">
+                            สังเกตรูปแบบและลากวัตถุมาเติมในช่องว่าง ❓ ให้ถูกต้อง
+                        </h3>
+                    </div>
+
+                    <!-- Pattern Sequence Display Strip -->
+                    <div id="l3-pattern-container" class="bg-sky-100 p-6 rounded-3xl border-4 border-sky-300 flex items-center justify-center gap-2 sm:gap-4 flex-wrap min-h-[130px] shadow-inner">
+                        <!-- Items rendered dynamically -->
+                    </div>
+
+                    <!-- Options Palette to Drag or Click -->
+                    <div>
+                        <p class="text-xs font-bold text-slate-500 mb-2">เลือกวัตถุมาเติมในช่องว่าง:</p>
+                        <div id="l3-options-container" class="flex justify-center gap-3 sm:gap-4">
+                            <!-- Options rendered dynamically -->
+                        </div>
+                    </div>
+
+                    <button onclick="checkL3Answer()" class="btn-game bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-8 py-3 rounded-2xl text-base shadow-lg">
+                        <i class="fa-solid fa-check-double"></i> ตรวจสอบรูปแบบ
+                    </button>
+                </div>
+            `;
+
+            window.l3State = {
+                currentStage: 0,
+                stages: [
+                    {
+                        pattern: ['🔴', '🔵', '🟢', '🔴', '🔵', '🟢', '🔴', '❓', '🟢'],
+                        answer: '🔵',
+                        options: ['🔴', '🔵', '🟢', '🟡'],
+                        userAns: null
+                    },
+                    {
+                        pattern: ['🤖', '⭐', '🤖', '🤖', '⭐', '🤖', '🤖', '⭐', '❓'],
+                        answer: '🤖',
+                        options: ['🤖', '⭐', '🚀', '👾'],
+                        userAns: null
+                    },
+                    {
+                        pattern: ['💻', '📱', '💻', '📱', '💻', '❓', '💻'],
+                        answer: '📱',
+                        options: ['💻', '📱', '🖥️', '⌚'],
+                        userAns: null
+                    }
+                ]
+            };
+
+            loadL3Stage();
+        }
+
+        function loadL3Stage() {
+            const stage = window.l3State.stages[window.l3State.currentStage];
+            stage.userAns = null;
+
+            document.getElementById('l3-stage-indicator').innerText = `ข้อที่ ${window.l3State.currentStage + 1} / 3`;
+
+            const patternContainer = document.getElementById('l3-pattern-container');
+            patternContainer.innerHTML = stage.pattern.map((item, idx) => {
+                if (item === '❓') {
+                    return `
+                        <div id="l3-blank-slot" onclick="clearL3Slot()" class="w-12 h-12 sm:w-16 sm:h-16 bg-white border-4 border-dashed border-sky-400 rounded-2xl flex items-center justify-center text-2xl sm:text-3xl cursor-pointer hover:bg-sky-50 shadow-md">
+                            ${stage.userAns || '❓'}
+                        </div>
+                    `;
+                }
+                return `
+                    <div class="w-12 h-12 sm:w-16 sm:h-16 bg-white border-2 border-sky-200 rounded-2xl flex items-center justify-center text-2xl sm:text-3xl shadow-sm">
+                        ${item}
+                    </div>
+                `;
+            }).join('');
+
+            const optsContainer = document.getElementById('l3-options-container');
+            optsContainer.innerHTML = stage.options.map(opt => `
+                <button onclick="selectL3Opt('${opt}')" class="btn-game w-14 h-14 sm:w-16 sm:h-16 bg-white border-2 border-slate-300 hover:border-indigo-400 rounded-2xl flex items-center justify-center text-2xl sm:text-3xl shadow-md">
+                    ${opt}
+                </button>
+            `).join('');
+        }
+
+        function selectL3Opt(opt) {
+            audio.playClick();
+            const stage = window.l3State.stages[window.l3State.currentStage];
+            stage.userAns = opt;
+            const slot = document.getElementById('l3-blank-slot');
+            if (slot) {
+                slot.innerText = opt;
+                slot.classList.remove('border-dashed');
+                slot.classList.add('border-indigo-500', 'bg-indigo-50');
+            }
+        }
+
+        function clearL3Slot() {
+            audio.playClick();
+            const stage = window.l3State.stages[window.l3State.currentStage];
+            stage.userAns = null;
+            const slot = document.getElementById('l3-blank-slot');
+            if (slot) {
+                slot.innerText = '❓';
+                slot.classList.add('border-dashed');
+                slot.classList.remove('border-indigo-500', 'bg-indigo-50');
+            }
+        }
+
+        function checkL3Answer() {
+            const stage = window.l3State.stages[window.l3State.currentStage];
+            if (!stage.userAns) {
+                alert("กรุณาเลือกวัตถุใส่ในช่อง ❓ ก่อนนะ!");
+                return;
+            }
+
+            if (stage.userAns === stage.answer) {
+                audio.playSuccess();
+                if (window.l3State.currentStage < 2) {
+                    window.l3State.currentStage++;
+                    loadL3Stage();
+                } else {
+                    game.completeLevel(3);
+                }
+            } else {
+                audio.playError();
+                alert("ยังไม่ถูกต้องตามแพตเทิร์น ลองสังเกตลำดับการซ้ำของสัญลักษณ์อีกครั้งนะ!");
+            }
+        }
+
+        function renderLevel4(container) {
+            container.innerHTML = `
+                <div class="space-y-6">
+                    <div class="bg-orange-50 border-2 border-orange-200 p-4 rounded-2xl text-center">
+                        <h3 class="font-bold text-slate-800 text-base sm:text-lg">
+                            📦 จัดหมวดหมู่ข้อมูล: คลิกหรือลากการ์ดข้อมูลลงกล่องที่ถูกต้อง
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-1">
+                            ความก้าวหน้า: <span id="l4-sorted-count" class="font-bold text-orange-600">0</span> / 6 ชิ้น
+                        </p>
+                    </div>
+
+                    <!-- Target Category Bins -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        
+                        <div id="bin-number" onclick="dropL4Item('number')" class="bg-sky-50 border-4 border-dashed border-sky-300 hover:border-sky-500 rounded-3xl p-4 text-center min-h-[160px] flex flex-col justify-between transition">
+                            <div class="font-bold text-sky-800 text-sm flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-hashtag text-sky-600"></i> ข้อมูลตัวเลข
+                            </div>
+                            <div id="bin-number-items" class="flex flex-wrap gap-2 justify-center my-2"></div>
+                            <span class="text-[11px] text-sky-500 font-medium">คลิกที่นี่เพื่อหย่อน</span>
+                        </div>
+
+                        <div id="bin-text" onclick="dropL4Item('text')" class="bg-emerald-50 border-4 border-dashed border-emerald-300 hover:border-emerald-500 rounded-3xl p-4 text-center min-h-[160px] flex flex-col justify-between transition">
+                            <div class="font-bold text-emerald-800 text-sm flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-font text-emerald-600"></i> ข้อมูลข้อความ/ภาพ
+                            </div>
+                            <div id="bin-text-items" class="flex flex-wrap gap-2 justify-center my-2"></div>
+                            <span class="text-[11px] text-emerald-500 font-medium">คลิกที่นี่เพื่อหย่อน</span>
+                        </div>
+
+                        <div id="bin-audio" onclick="dropL4Item('audio')" class="bg-purple-50 border-4 border-dashed border-purple-300 hover:border-purple-500 rounded-3xl p-4 text-center min-h-[160px] flex flex-col justify-between transition">
+                            <div class="font-bold text-purple-800 text-sm flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-music text-purple-600"></i> ข้อมูลเสียง
+                            </div>
+                            <div id="bin-audio-items" class="flex flex-wrap gap-2 justify-center my-2"></div>
+                            <span class="text-[11px] text-purple-500 font-medium">คลิกที่นี่เพื่อหย่อน</span>
+                        </div>
+
+                    </div>
+
+                    <!-- Items Pool to Sort -->
+                    <div class="bg-slate-100 p-4 rounded-2xl border-2 border-slate-200 text-center">
+                        <p class="text-xs font-bold text-slate-500 mb-3">การ์ดข้อมูลที่ต้องจัดกลุ่ม (เลือกทีละใบ):</p>
+                        <div id="l4-items-pool" class="flex flex-wrap justify-center gap-3">
+                            <!-- Items inserted dynamically -->
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            window.l4State = {
+                selectedItemId: null,
+                items: [
+                    { id: 1, label: '🔢 250', category: 'number' },
+                    { id: 2, label: '📝 "สวัสดี"', category: 'text' },
+                    { id: 3, label: '🎵 เสียงเพลง', category: 'audio' },
+                    { id: 4, label: '🔢 3.14', category: 'number' },
+                    { id: 5, label: '🖼️ รูปโรงเรียน', category: 'text' },
+                    { id: 6, label: '🔔 เสียงกระดิ่ง', category: 'audio' }
+                ],
+                sorted: []
+            };
+
+            renderL4Pool();
+        }
+
+        function renderL4Pool() {
+            const pool = document.getElementById('l4-items-pool');
+            if (!pool) return;
+            pool.innerHTML = '';
+
+            const remaining = window.l4State.items.filter(item => !window.l4State.sorted.includes(item.id));
+
+            if (remaining.length === 0) {
+                pool.innerHTML = `<span class="text-sm font-bold text-emerald-600">🎉 จัดหมวดหมู่ครบเรียบร้อยแล้ว!</span>`;
+                setTimeout(() => game.completeLevel(3), 600);
+                return;
+            }
+
+            remaining.forEach(item => {
+                const isSelected = window.l4State.selectedItemId === item.id;
+                const card = document.createElement('button');
+                card.onclick = () => selectL4Item(item.id);
+                card.className = `btn-game px-4 py-2.5 rounded-xl font-bold text-sm shadow-sm transition border-2 ${isSelected ? 'bg-amber-300 border-amber-500 scale-105 ring-2 ring-amber-400' : 'bg-white border-slate-300 hover:border-amber-400'}`;
+                card.innerText = item.label;
+                pool.appendChild(card);
+            });
+
+            document.getElementById('l4-sorted-count').innerText = window.l4State.sorted.length;
+        }
+
+        function selectL4Item(id) {
+            audio.playClick();
+            window.l4State.selectedItemId = id;
+            renderL4Pool();
+        }
+
+        function dropL4Item(targetCategory) {
+            if (!window.l4State.selectedItemId) {
+                alert("กรุณาคลิกเลือกการ์ดข้อมูลด้านล่างก่อนหย่อนลงกล่องนะ!");
+                return;
+            }
+
+            const item = window.l4State.items.find(i => i.id === window.l4State.selectedItemId);
+
+            if (item.category === targetCategory) {
+                audio.playSuccess();
+                window.l4State.sorted.push(item.id);
+                window.l4State.selectedItemId = null;
+
+                // Append item tag inside target bin
+                const binContainer = document.getElementById(`bin-${targetCategory}-items`);
+                const tag = document.createElement('span');
+                tag.className = "bg-white border border-slate-300 px-2.5 py-1 rounded-lg text-xs font-bold shadow-xs animate-bounce";
+                tag.innerText = item.label;
+                binContainer.appendChild(tag);
+
+                renderL4Pool();
+            } else {
+                audio.playError();
+                alert("อ๊ะ! หมวดหมู่นี้ยังไม่ถูกต้อง ลองสังเกตประเภทของข้อมูลอีกครั้งนะ");
+            }
+        }
+
+        function renderLevel5(container) {
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                    
+                    <!-- Left: Buggy Commands Editor -->
+                    <div class="md:col-span-5 bg-slate-50 rounded-2xl p-4 border-2 border-indigo-100 space-y-4">
+                        <div>
+                            <span class="bg-rose-100 text-rose-700 font-bold text-xs px-2.5 py-0.5 rounded-full">ภารกิจตรวจสอบและแก้ไข (Debugging)</span>
+                            <h3 class="font-bold text-slate-800 text-sm mt-1">
+                                หุ่นยนต์ส่งของเดินหลงทาง! กดปุ่ม "เปลี่ยนคำสั่ง" ตรงขั้นตอนที่มีสัญลักษณ์ ⚠️ ให้ถูกต้อง
+                            </h3>
+                        </div>
+
+                        <!-- Editable Command Sequence List -->
+                        <div id="l5-editor-list" class="space-y-2 bg-white p-3 rounded-2xl border-2 border-slate-200 min-h-[220px]">
+                            <!-- Steps rendered dynamically -->
+                        </div>
+
+                        <button onclick="runL5()" class="btn-game w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-2xl text-base flex items-center justify-center gap-2 shadow-lg">
+                            <i class="fa-solid fa-bug-slash"></i> ทดสอบการทำงาน (Test Run)
+                        </button>
+                    </div>
+
+                    <!-- Right: Simulation Map -->
+                    <div class="md:col-span-7 flex flex-col items-center">
+                        <div class="bg-rose-50 p-4 rounded-3xl border-4 border-rose-200 shadow-inner w-full max-w-md">
+                            <div id="l5-grid" class="grid grid-cols-5 gap-2 bg-rose-200 p-2.5 rounded-2xl">
+                                <!-- Grid tiles -->
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-3 text-center">
+                            📦 ช่วยหุ่นยนต์ส่งของเดินผ่านแม่น้ำ 🌊 ไปส่งพัสดุที่บ้านของคุณยาย 🏡 อย่างปลอดภัย!
+                        </p>
+                    </div>
+
+                </div>
+            `;
+
+            // Grid: S=Start, R=River/Bug obstacle, G=Goal (Grandma)
+            const gridMap = [
+                ['E', 'E', 'E', 'E', 'G'],
+                ['E', 'R', 'R', 'E', 'E'],
+                ['E', 'E', 'R', 'E', 'E'],
+                ['E', 'E', 'E', 'E', 'E'],
+                ['S', 'E', 'E', 'E', 'E']
+            ];
+
+            window.l5State = {
+                grid: gridMap,
+                playerX: 0,
+                playerY: 4,
+                dir: 1, // Facing Right
+                commands: [
+                    { action: 'forward', label: '⬆️ เดินหน้า 1 ก้าว', isBug: false },
+                    { action: 'forward', label: '⬆️ เดินหน้า 1 ก้าว', isBug: false },
+                    { action: 'left', label: '↰ หันซ้าย 👈', isBug: true }, // BUG!
+                    { action: 'forward', label: '⬆️ เดินหน้า 1 ก้าว', isBug: false },
+                    { action: 'forward', label: '⬆️ เดินหน้า 1 ก้าว', isBug: false }
+                ]
+            };
+
+            renderL5Editor();
+            renderL5Grid();
+        }
+
+        function renderL5Editor() {
+            const list = document.getElementById('l5-editor-list');
+            if (!list) return;
+
+            list.innerHTML = window.l5State.commands.map((cmd, idx) => `
+                <div class="flex items-center justify-between p-2.5 rounded-xl border ${cmd.isBug ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 border-slate-200'} text-xs font-bold">
+                    <span class="flex items-center gap-2">
+                        <span class="w-5 h-5 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center text-[10px]">${idx + 1}</span>
+                        <span>${cmd.label}</span>
+                        ${cmd.isBug ? '<span class="text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full text-[10px] font-bold">⚠️ จุดผิดพลาด</span>' : ''}
+                    </span>
+                    <button onclick="toggleL5Cmd(${idx})" class="btn-game bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm">
+                        <i class="fa-solid fa-rotate mr-0.5"></i> เปลี่ยนคำสั่ง
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function toggleL5Cmd(idx) {
+            audio.playClick();
+            const cmd = window.l5State.commands[idx];
+            
+            // Cycle commands: forward -> left -> right -> forward
+            if (cmd.action === 'forward') {
+                cmd.action = 'left';
+                cmd.label = '↰ หันซ้าย 👈';
+            } else if (cmd.action === 'left') {
+                cmd.action = 'right';
+                cmd.label = '↱ หันขวา 👉';
+            } else {
+                cmd.action = 'forward';
+                cmd.label = '⬆️ เดินหน้า 1 ก้าว';
+            }
+            cmd.isBug = false; // Resolved indicator visually
+
+            renderL5Editor();
+        }
+
+        function renderL5Grid() {
+            const gridContainer = document.getElementById('l5-grid');
+            if (!gridContainer) return;
+            gridContainer.innerHTML = '';
+
+            const dirIcons = ['⬆️', '➡️', '⬇️', '⬅️'];
+
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    const tile = document.createElement('div');
+                    tile.className = "w-12 h-12 sm:w-14 sm:h-14 bg-rose-50 rounded-xl flex items-center justify-center text-xl sm:text-2xl relative shadow-sm border border-rose-300/60";
+
+                    const item = window.l5State.grid[r][c];
+                    if (item === 'R') {
+                        tile.innerText = '🌊';
+                        tile.classList.add('bg-sky-200');
+                    } else if (item === 'G') {
+                        tile.innerText = '🏡';
+                        tile.classList.add('bg-amber-200');
+                    }
+
+                    if (window.l5State.playerX === c && window.l5State.playerY === r) {
+                        tile.innerHTML = `<div class="relative flex items-center justify-center">
+                            🤖 <span class="absolute -top-2 text-[10px]">${dirIcons[window.l5State.dir]}</span>
+                        </div>`;
+                    }
+
+                    gridContainer.appendChild(tile);
+                }
+            }
+        }
+
+        async function runL5() {
+            // Reset position
+            window.l5State.playerX = 0;
+            window.l5State.playerY = 4;
+            window.l5State.dir = 1; // Facing East
+            renderL5Grid();
+
+            const dx = [0, 1, 0, -1];
+            const dy = [-1, 0, 1, 0];
+
+            for (let i = 0; i < window.l5State.commands.length; i++) {
+                const cmd = window.l5State.commands[i].action;
+                audio.playStep();
+
+                if (cmd === 'left') {
+                    window.l5State.dir = (window.l5State.dir + 3) % 4;
+                } else if (cmd === 'right') {
+                    window.l5State.dir = (window.l5State.dir + 1) % 4;
+                } else if (cmd === 'forward') {
+                    const nx = window.l5State.playerX + dx[window.l5State.dir];
+                    const ny = window.l5State.playerY + dy[window.l5State.dir];
+
+                    if (nx >= 0 && nx < 5 && ny >= 0 && ny < 5) {
+                        if (window.l5State.grid[ny][nx] === 'R') {
+                            audio.playError();
+                            alert("ตกลงไปในแม่น้ำ! หุ่นยนต์ส่งของเดินผิดทิศทาง ลองตรวจสอบและแก้ไขคำสั่งปุ่ม 'เปลี่ยนคำสั่ง' นะ");
+                            return;
+                        }
+                        window.l5State.playerX = nx;
+                        window.l5State.playerY = ny;
+                    } else {
+                        audio.playError();
+                        alert("ตกขอบแมพ! ลองปรับทิศทางการเลี้ยวใหม่นะ");
+                        return;
+                    }
+                }
+
+                renderL5Grid();
+                await new Promise(r => setTimeout(r, 400));
+            }
+
+            if (window.l5State.playerX === 4 && window.l5State.playerY === 0) {
+                game.completeLevel(3);
+            } else {
+                audio.playError();
+                alert("ยังไปไม่ถึงบ้านคุณยาย 🏡 ลองตรวจเช็กลำดับขั้นตอนอีกครั้งนะ!");
+            }
+        }
+
+        // Initialize App on DOM Load
+        window.onload = () => {
+            game.updateUI();
+        };
+    </script>
+</body>
+</html>
